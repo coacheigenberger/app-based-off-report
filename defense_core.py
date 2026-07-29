@@ -128,7 +128,8 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
     derived=out["YARD_LINE"].apply(field_zone)
     out["FIELD_ZONE"]=out["FIELD_ZONE"].apply(clean)
     out.loc[out["FIELD_ZONE"].eq("-"),"FIELD_ZONE"]=derived[out["FIELD_ZONE"].eq("-")]
-    out["IS_BLITZ"]=~out["BLITZ"].isin(["-","NONE","NO","0","BASE"])
+    out["IS_BLITZ"]=~out["BLITZ"].isin(["-","NONE","NO","NO BLITZ","0","BASE"])
+    out["IS_STUNT"]=~out["STUNT"].isin(["-","NONE","NO","NO STUNT","0","BASE"])
     out["IS_MAN"]=out["COVERAGE"].apply(lambda x:any(x.startswith(v) for v in ["COVER 0","COVER 1"]) or "PRESS" in x)
     out["IS_DISRESPECTFUL"]=out["IS_MAN"]
     out["IS_SCREEN_PRESSURE"]=out["BLITZ"].apply(lambda x:any(tok in x for tok in PRESSURE_5_6)) | out["NUM_BLITZERS"].isin([5,6])

@@ -59,17 +59,48 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Front menu")
     fronts=frequency(eng.df,"FRONT")
-    st.dataframe(fronts,use_container_width=True,hide_index=True)
-    for front in fronts["FRONT"].head(12):
+    front_rows=[]
+    for _, row in fronts.iterrows():
+        front=row["FRONT"]
         g=eng.df[eng.df["FRONT"]==front]
+        front_rows.append({
+            "FRONT":front,
+            "Plays":len(g),
+            "Front %":round(len(g)/len(eng.df)*100,1) if len(eng.df) else 0.0,
+            "Blitz Plays":int(g["IS_BLITZ"].sum()),
+            "Blitz % Out of Front":round(g["IS_BLITZ"].mean()*100,1) if len(g) else 0.0,
+            "Stunt Plays":int(g["IS_STUNT"].sum()),
+            "Stunt % Out of Front":round(g["IS_STUNT"].mean()*100,1) if len(g) else 0.0,
+        })
+    st.dataframe(pd.DataFrame(front_rows),use_container_width=True,hide_index=True)
+
+    for front in fronts["FRONT"]:
+        g=eng.df[eng.df["FRONT"]==front]
+        blitz_pct=round(g["IS_BLITZ"].mean()*100,1) if len(g) else 0.0
+        stunt_pct=round(g["IS_STUNT"].mean()*100,1) if len(g) else 0.0
         with st.expander(f"{front} — {len(g)} plays ({len(g)/len(eng.df)*100:.1f}%)"):
+            m1,m2,m3=st.columns(3)
+            m1.metric("Front snaps",len(g))
+            m2.metric("Blitz % out of front",f"{blitz_pct}%")
+            m3.metric("Stunt % out of front",f"{stunt_pct}%")
+
             a,b=st.columns(2)
-            a.markdown("**Top stunts**"); a.dataframe(frequency(g,"STUNT").head(3),hide_index=True,use_container_width=True)
-            b.markdown("**Top blitz + stunt calls**")
-            x=g.copy(); x["BLITZ + STUNT"]=x["BLITZ"]+" / "+x["STUNT"]
-            b.dataframe(frequency(x,"BLITZ + STUNT").head(3),hide_index=True,use_container_width=True)
+            with a:
+                st.markdown("**All stunt calls**")
+                st.dataframe(frequency(g,"STUNT"),hide_index=True,use_container_width=True)
+            with b:
+                st.markdown("**All blitz calls**")
+                st.dataframe(frequency(g,"BLITZ"),hide_index=True,use_container_width=True)
+
+            st.markdown("**All blitz + stunt combinations within this front**")
+            x=g.copy()
+            x["BLITZ + STUNT"]=x["BLITZ"]+" / "+x["STUNT"]
+            st.dataframe(frequency(x,"BLITZ + STUNT"),hide_index=True,use_container_width=True)
 
 with tabs[2]:
+    overall_blitz=eng.overview()["blitz_pct"]
+    st.metric("Overall blitz percentage",f"{overall_blitz}%")
+    st.caption("A play counts as a blitz when the Blitz column contains a recorded blitz call.")
     blitzes=frequency(eng.df,"BLITZ")
     st.dataframe(blitzes,use_container_width=True,hide_index=True)
     for blitz in blitzes["BLITZ"]:
