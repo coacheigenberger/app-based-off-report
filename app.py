@@ -21,7 +21,7 @@ with st.sidebar:
     opponent=st.text_input("Opponent name",placeholder="Opponent")
     files=st.file_uploader("Upload Excel/CSV cutups",type=["xlsx","xls","csv"],accept_multiple_files=True)
     load=st.button("Load defense",type="primary",use_container_width=True)
-    st.caption("Missing columns are preserved as No data. No external AI service is used.")
+    st.caption("Only rows tagged D in ODK / O-D-K are analyzed. Missing columns are preserved as No data.")
 
 if load:
     if not files: st.error("Upload at least one file.")
@@ -72,10 +72,11 @@ with tabs[1]:
 with tabs[2]:
     blitzes=frequency(eng.df,"BLITZ")
     st.dataframe(blitzes,use_container_width=True,hide_index=True)
-    for blitz in blitzes["BLITZ"].head(15):
+    for blitz in blitzes["BLITZ"]:
         g=eng.df[eng.df["BLITZ"]==blitz]
         with st.expander(f"{blitz} — {len(g)} plays ({len(g)/len(eng.df)*100:.1f}%)"):
-            st.dataframe(combos(g,3),use_container_width=True,hide_index=True)
+            st.markdown("**All front / stunt / blitz / coverage versions**")
+            st.dataframe(frequency(g,"COMBO"),use_container_width=True,hide_index=True)
 
 with tabs[3]:
     cov=frequency(eng.df,"COVERAGE")
@@ -91,7 +92,7 @@ with tabs[4]:
     val=st.selectbox("Detailed situation",order)
     g=eng.df[eng.df[dim]==val]
     st.caption(f"{len(g)} plays")
-    for key in ["BLITZ","COVERAGE","COMBO"]:
+    for key in ["FRONT","BLITZ","COVERAGE","COMBO"]:
         st.markdown(f"#### {key.title()}")
         st.dataframe(frequency(g,key).head(20 if key!="COMBO" else 5),use_container_width=True,hide_index=True)
 

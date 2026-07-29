@@ -29,3 +29,9 @@ streamlit run app.py
 The platform accepts variants of: Game, O/D/K, Quarter, Time Remaining, Down, Distance, Yard Line, Field Zone, Hash, Personnel, OFF FORM, OFF Play, Backfield Set, Motion, Defensive Front, Stunt, Blitz Type, Coverage, Blitz Direction, Blitz Strength, Result, GN/LS, Turnover Forced, Penalty, # of Blitzers, P & 10, Coverage Shell, Rotation, Fit 1/2/3, and Box Add.
 
 Missing columns are shown as no data rather than blocking the report.
+
+
+## v1.1 updates
+- Filters every upload to rows where `ODK` / `O/D/K` equals `D` before analysis.
+- The Blitz tab now displays every blitz call and every front/stunt/blitz/coverage version.
+- Down-and-distance and field-zone detail now include full front distributions.

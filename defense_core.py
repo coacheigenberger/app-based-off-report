@@ -114,6 +114,15 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
     for c in ["GAME","ODK","HASH","PERSONNEL","FORMATION","OFF_PLAY","BACKFIELD","MOTION","FRONT","STUNT","BLITZ",
               "BLITZ_DIR","BLITZ_STRENGTH","RESULT","TURNOVER","PENALTY","P10","SHELL","ROTATION","FIT1","FIT2","FIT3","BOX_ADD"]:
         out[c]=out[c].apply(clean)
+
+    # Defense-only platform: every downstream table, prediction, recommendation,
+    # chart, and export uses only rows explicitly tagged D in ODK / O-D-K.
+    if "ODK" not in out.columns or out["ODK"].eq("-").all():
+        raise ValueError("No ODK (or O/D/K) data was found. Add an ODK column and tag defensive snaps with D.")
+    out=out[out["ODK"].eq("D")].copy()
+    if out.empty:
+        raise ValueError("No defensive snaps were found. The ODK (or O/D/K) column must contain D for defensive plays.")
+
     out["COVERAGE"]=out["COVERAGE"].apply(canonical_coverage)
     out["DND"]=[dnd(a,b) for a,b in zip(out["DOWN"],out["DISTANCE"])]
     derived=out["YARD_LINE"].apply(field_zone)
