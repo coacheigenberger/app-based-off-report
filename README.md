@@ -31,7 +31,27 @@ The platform accepts variants of: Game, O/D/K, Quarter, Time Remaining, Down, Di
 Missing columns are shown as no data rather than blocking the report.
 
 
-## v1.1 updates
+## v1.2 updates
 - Filters every upload to rows where `ODK` / `O/D/K` equals `D` before analysis.
 - The Blitz tab now displays every blitz call and every front/stunt/blitz/coverage version.
 - Down-and-distance and field-zone detail now include full front distributions.
+
+
+## v1.2 updates
+- Front menu shows blitz percentage and stunt percentage out of each front.
+- Each front includes all stunt calls, all blitz calls, and all blitz + stunt combinations.
+- Blitz tab displays the overall blitz percentage.
+
+## PowerPoint export
+
+The Export tab now includes a **Download PowerPoint scouting deck** button.
+
+The app uses the bundled `MASTER DEF Breakdown Template.pptx` by default and automatically fills:
+- Slide 1: Top 5 fronts, percentages, key takeaways, and a front usage pie chart.
+- Slide 2: Top 5 blitzes, excluding blank/no-blitz entries, plus the top stunt tied to each blitz.
+- Slide 3: Coverage usage by down.
+- Slide 4: Top 5 total calls for 3rd & 7+, 3rd & 3-6, and 3rd & 1-2.
+- Slide 5: Top 5 total calls for High Red Zone, Red Zone, and Goal Line.
+- Slide 6: Formation tendencies.
+
+You can upload another `.pptx` in the Export tab as long as it keeps the same six-slide/table structure.

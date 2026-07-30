@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 from defense_core import DefenseEngine, frequency, combos, DND_ORDER, FIELD_ZONE_ORDER
+from ppt_export import build_defense_pptx
 
 st.set_page_config(page_title="Defense Analyst",page_icon="🏈",layout="wide")
 st.title("🏈 Defense Analyst")
@@ -173,6 +174,38 @@ with tabs[9]:
 
 with tabs[10]:
     name=(st.session_state.get("opponent") or "Opponent").replace(" ","_")
+    opponent_name=st.session_state.get("opponent") or "Opponent"
+
+    st.subheader("PowerPoint scouting deck")
+    st.caption("Builds the deck from the master breakdown template: Fronts, Blitzes, Coverage, 3rd Down, Red Zone, and Formation.")
+    custom_template=st.file_uploader(
+        "Optional: upload a different .pptx template with the same slide/table structure",
+        type=["pptx"],
+        accept_multiple_files=False,
+        key="ppt_template_upload",
+    )
+
+    try:
+        if custom_template is not None:
+            with tempfile.NamedTemporaryFile(delete=False,suffix=".pptx") as tmp:
+                tmp.write(custom_template.getbuffer())
+                ppt_template_path=tmp.name
+        else:
+            ppt_template_path=Path(__file__).with_name("MASTER DEF Breakdown Template.pptx")
+        pptx_bytes=build_defense_pptx(eng,ppt_template_path,opponent_name)
+        st.download_button(
+            "Download PowerPoint scouting deck",
+            pptx_bytes,
+            f"{name}_Defensive_Tendency_Deck.pptx",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            type="primary",
+            use_container_width=True,
+        )
+    except Exception as e:
+        st.error("PowerPoint export could not be built. Make sure the template has the expected six slides and tables.")
+        st.exception(e)
+
+    st.divider()
     st.download_button("Download full Excel tendency report",eng.excel_bytes(),f"{name}_Defensive_Tendency_Report.xlsx",
-                       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",type="primary")
+                       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     st.download_button("Download normalized CSV",eng.df.to_csv(index=False).encode(),f"{name}_Normalized_Defense.csv","text/csv")
