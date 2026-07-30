@@ -55,3 +55,10 @@ The app uses the bundled `MASTER DEF Breakdown Template.pptx` by default and aut
 - Slide 6: Formation tendencies.
 
 You can upload another `.pptx` in the Export tab as long as it keeps the same six-slide/table structure.
+
+
+## v1.4 updates
+- PowerPoint export now uses the uploaded master breakdown template as the default.
+- Export logic updates text/numbers only and avoids changing table dimensions, fills, fonts, borders, margins, or slide formatting.
+- Slide 4 and Slide 5 support a middle **Total Plays** column when the template table has three columns.
+- Formation Tendencies now lists the top two fronts when the most-used front is below 50%.
