@@ -62,3 +62,12 @@ You can upload another `.pptx` in the Export tab as long as it keeps the same si
 - Export logic updates text/numbers only and avoids changing table dimensions, fills, fonts, borders, margins, or slide formatting.
 - Slide 4 and Slide 5 support a middle **Total Plays** column when the template table has three columns.
 - Formation Tendencies now lists the top two fronts when the most-used front is below 50%.
+
+
+## v1.6 updates
+- PowerPoint export removes the Date field and keeps only `Opponent: [Opponent Name]`.
+- Every percentage in the PowerPoint deck is shown as `Count/Total (Percentage)`.
+- Slide 2 adds Top Front for each blitz while preserving the existing table structure and formatting.
+- Slide 4 and Slide 5 keep the Total Plays column.
+- Formation Tendencies still lists the top two fronts when the top front is under 50%.
+- Export logic only replaces text in existing placeholders/table cells and does not change fonts, tables, or slide formatting.
