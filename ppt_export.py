@@ -6,6 +6,7 @@ from typing import Sequence, Tuple
 
 import pandas as pd
 from pptx import Presentation
+from pptx.dml.color import RGBColor
 
 from defense_core import frequency, pct, confidence
 
@@ -218,7 +219,97 @@ def _situational_rows_for_template(buckets: dict[str, pd.DataFrame], table_shape
     return headers, rows
 
 
-def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Opponent") -> bytes:
+
+
+def _find_slide_by_title(prs, title_substring: str, fallback_index: int | None = None):
+    want = title_substring.lower()
+    for slide in prs.slides:
+        joined = "\n".join(_shape_text(s) for s in _text_shapes(slide)).lower()
+        if want in joined:
+            return slide
+    if fallback_index is not None and len(prs.slides) > fallback_index:
+        return prs.slides[fallback_index]
+    return None
+
+
+def _result_color(result: str):
+    r = (result or "").strip().upper()
+    if r.startswith("W"):
+        return RGBColor(0, 130, 0)
+    if r.startswith("L"):
+        return RGBColor(190, 0, 0)
+    if r.startswith("T"):
+        return RGBColor(120, 120, 120)
+    return None
+
+
+def _set_cell_text_preserve_color(cell, value, rgb=None) -> None:
+    _set_text_preserve_textframe(cell.text_frame, value)
+    if rgb is None:
+        return
+    try:
+        for p in cell.text_frame.paragraphs:
+            for r in p.runs:
+                r.font.color.rgb = rgb
+                r.font.bold = True
+    except Exception:
+        pass
+
+
+def _fill_overview_slide(slide, opponent: str, overview: dict | None) -> None:
+    if not overview:
+        overview = {}
+    _replace_opponent(slide, opponent)
+
+    record = overview.get("record", "") or "No data"
+    sacks = overview.get("sacks", "") or "No data"
+    ints = overview.get("interceptions", "") or "No data"
+    fumbles = overview.get("fumble_recoveries", "") or "No data"
+    source = overview.get("source_url", "") or "GoBound"
+
+    stat_rows = [
+        ["Overall Record", record],
+        ["Total Sacks", sacks],
+        ["Total INTs", ints],
+        ["Total Fumble Recoveries", fumbles],
+        ["Last 5 Games", overview.get("last_five_record", "") or "No data"],
+        ["Avg. Margin", overview.get("average_margin", "") or "No data"],
+        ["One-Possession Games", overview.get("one_possession_games", "") or "No data"],
+        ["Wins vs Winning Records", overview.get("wins_vs_winning_records", "") or "No data"],
+    ]
+
+    games = overview.get("games") or []
+    game_rows = []
+    for i, g in enumerate(games[:12], start=1):
+        if hasattr(g, "__dict__"):
+            g = g.__dict__
+        game_rows.append([
+            g.get("week") or str(i),
+            g.get("opponent") or "",
+            g.get("opponent_record") or "",
+            g.get("score") or "",
+            g.get("result") or "",
+        ])
+
+    tables = _tables(slide)
+    if len(tables) >= 1:
+        _fill_table_preserve(tables[0], ["Statistic", "Value"], stat_rows)
+    if len(tables) >= 2:
+        tbl_shape = tables[1]
+        _fill_table_preserve(tbl_shape, ["Game", "Opponent", "Record", "Score", "W/L"], game_rows)
+        # Intentional requested formatting: color code the result column only.
+        tbl = tbl_shape.table
+        result_col = min(4, len(tbl.columns) - 1)
+        for r in range(1, len(tbl.rows)):
+            val = tbl.cell(r, result_col).text
+            _set_cell_text_preserve_color(tbl.cell(r, result_col), val, _result_color(val))
+
+    for shape in _text_shapes(slide):
+        txt = _shape_text(shape)
+        if "Source:" in txt:
+            _set_shape_text_preserve(shape, f"Source: {source}")
+
+def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Opponent", overview: dict | None = None) -> bytes:
     prs = Presentation(str(template_path))
     df = engine.df
     total_plays = len(df)
@@ -226,9 +317,14 @@ def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Oppon
     for slide in prs.slides:
         _replace_opponent(slide, opponent)
 
-    # Slide 1: Fronts
-    if len(prs.slides) >= 1:
-        slide = prs.slides[0]
+    # Slide: Opponent Overview
+    overview_slide = _find_slide_by_title(prs, "Opponent Overview", None)
+    if overview_slide is not None:
+        _fill_overview_slide(overview_slide, opponent, overview)
+
+    # Fronts
+    slide = _find_slide_by_title(prs, "Front Tendencies", 0 if overview_slide is None else 1)
+    if slide is not None:
         front_freq = frequency(df, "FRONT", denom=total_plays).head(5)
         rows = [[r["FRONT"], int(r["Plays"]), _fmt_count_pct(r["Plays"], total_plays)] for _, r in front_freq.iterrows()]
         tables = _tables(slide)
@@ -245,9 +341,9 @@ def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Oppon
             f"🛑 Red zone front: {rz_front} {_fmt_count_pct(rz_count, rz_total)}",
         ])
 
-    # Slide 2: Blitzes
-    if len(prs.slides) >= 2:
-        slide = prs.slides[1]
+    # Blitzes
+    slide = _find_slide_by_title(prs, "Blitz Tendencies", 1 if overview_slide is None else 2)
+    if slide is not None:
         blitz_df = df[~df["BLITZ"].isin(BLANK_BLITZ)].copy()
         blitz_freq = frequency(blitz_df, "BLITZ", denom=total_plays).head(5)
         rows = []
@@ -255,15 +351,10 @@ def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Oppon
             b = r["BLITZ"]
             g = blitz_df[blitz_df["BLITZ"] == b]
             blitz_total = len(g)
-
             fronts = frequency(g, "FRONT", denom=blitz_total).head(1)
             top_front = f'{fronts.iloc[0]["FRONT"]}\n{_fmt_count_pct(fronts.iloc[0]["Plays"], blitz_total)}' if not fronts.empty else "No data"
-
             stunts = frequency(g, "STUNT", denom=blitz_total).head(1)
             top_stunt = f'{stunts.iloc[0]["STUNT"]}\n{_fmt_count_pct(stunts.iloc[0]["Plays"], blitz_total)}' if not stunts.empty else "No data"
-
-            # Existing master slide has five columns. To preserve formatting/table structure,
-            # top front replaces the old separate Stunt % column, and the count/total/% lives in the same cell.
             rows.append([b, int(r["Plays"]), _fmt_count_pct(r["Plays"], total_plays), top_front, top_stunt])
         tables = _tables(slide)
         if tables:
@@ -276,9 +367,9 @@ def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Oppon
             f"🛑 Overall blitz rate: {_fmt_count_pct(int(df['IS_BLITZ'].sum()), total_plays)}",
         ])
 
-    # Slide 3: Coverages by down
-    if len(prs.slides) >= 3:
-        slide = prs.slides[2]
+    # Coverages by down
+    slide = _find_slide_by_title(prs, "Coverage Tendencies", 2 if overview_slide is None else 3)
+    if slide is not None:
         cover_freq = frequency(df, "COVERAGE", denom=total_plays).head(5)
         rows = []
         for _, r in cover_freq.iterrows():
@@ -300,9 +391,9 @@ def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Oppon
             "🛑 Cover 0/Cover 1/press = shot alert.",
         ])
 
-    # Slide 4: 3rd down
-    if len(prs.slides) >= 4:
-        slide = prs.slides[3]
+    # 3rd down
+    slide = _find_slide_by_title(prs, "3rd Down Tendencies", 3 if overview_slide is None else 4)
+    if slide is not None:
         buckets = _third_down_bucket(df)
         tables = _tables(slide)
         if tables:
@@ -319,9 +410,9 @@ def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Oppon
             f"🛑 3rd down sample: {len(all3)} snaps ({confidence(len(all3))} confidence)",
         ])
 
-    # Slide 5: Red Zone
-    if len(prs.slides) >= 5:
-        slide = prs.slides[4]
+    # Red Zone
+    slide = _find_slide_by_title(prs, "Red Zone Tendencies", 4 if overview_slide is None else 5)
+    if slide is not None:
         buckets = _red_zone_bucket(df)
         tables = _tables(slide)
         if tables:
@@ -339,9 +430,9 @@ def build_defense_pptx(engine, template_path: str | Path, opponent: str = "Oppon
             f"🛑 Red zone sample: {len(rz)} snaps ({confidence(len(rz))} confidence)",
         ])
 
-    # Slide 6: Formation
-    if len(prs.slides) >= 6:
-        slide = prs.slides[5]
+    # Formation
+    slide = _find_slide_by_title(prs, "Formation Tendencies", 5 if overview_slide is None else 6)
+    if slide is not None:
         form_freq = frequency(df, "FORMATION").head(5)
         rows = []
         for _, r in form_freq.iterrows():

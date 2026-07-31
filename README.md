@@ -71,3 +71,22 @@ You can upload another `.pptx` in the Export tab as long as it keeps the same si
 - Slide 4 and Slide 5 keep the Total Plays column.
 - Formation Tendencies still lists the top two fronts when the top front is under 50%.
 - Export logic only replaces text in existing placeholders/table cells and does not change fonts, tables, or slide formatting.
+
+
+## v1.7 Updates
+
+- Adds an **Opponent Overview** slide to the PowerPoint template.
+- Fetches GoBound data from a team page or the GoBound teams listing page when an opponent name is entered.
+- Populates:
+  - Overall record
+  - Total sacks
+  - Total INTs
+  - Total fumble recoveries
+  - Full season game table with opponent, opponent record, score, and W/L
+- Adds derived season context:
+  - Last 5 games record
+  - Average margin
+  - One-possession games
+  - Wins vs opponents with winning records when opponent records are available
+- Keeps existing template formatting intact during export, except the requested W/L color coding on the Overview slide.
+- Keeps Date removed from every slide and leaves only the Opponent line.
