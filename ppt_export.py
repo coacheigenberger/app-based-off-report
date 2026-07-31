@@ -122,11 +122,12 @@ def _replace_opponent(slide, opponent: str) -> None:
 
 
 def _write_takeaways(slide, lines: Sequence[str]) -> None:
-    for shape in _text_shapes(slide):
-        txt = _shape_text(shape)
-        if "Key Takeaways" in txt:
-            _set_shape_text_preserve(shape, "Key Takeaways\n" + "\n".join(lines[:5]))
-            return
+    """Leave template takeaway/notes boxes untouched.
+
+    This prevents the export from introducing font/color changes in freeform boxes.
+    The PowerPoint export only updates opponent text and table cells.
+    """
+    return
 
 
 def _top_value(df: pd.DataFrame, col: str, denom: int | None = None) -> Tuple[str, int, int, float]:

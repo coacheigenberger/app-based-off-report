@@ -57,14 +57,14 @@ The app uses the bundled `MASTER DEF Breakdown Template.pptx` by default and aut
 You can upload another `.pptx` in the Export tab as long as it keeps the same six-slide/table structure.
 
 
-## v1.4 updates
+## v2.1 updates
 - PowerPoint export now uses the uploaded master breakdown template as the default.
 - Export logic updates text/numbers only and avoids changing table dimensions, fills, fonts, borders, margins, or slide formatting.
 - Slide 4 and Slide 5 support a middle **Total Plays** column when the template table has three columns.
 - Formation Tendencies now lists the top two fronts when the most-used front is below 50%.
 
 
-## v2.0 updates
+## v2.1 updates
 - PowerPoint export now uses **count/total (percentage)** everywhere a percentage is shown.
 - Opponent labels now show only `Opponent: [Name]`; dates are removed from the slides.
 - Slide 1 can populate an optional Opponent Overview from a local CSV/Excel file instead of relying on a website fetch.
@@ -80,3 +80,20 @@ Upload a CSV or Excel file in the Export tab to populate the overview slide. The
 - A schedule table with columns such as `Game`, `Opponent`, `Record`, `Score`, and `W/L`.
 
 You can also combine snapshot and schedule data in one Excel workbook using separate sheets.
+
+
+## v2.1 fixes
+- Rebuilt from the clean user master template.
+- Front Tendencies table includes Blitz % and Top Blitz Call.
+- Every percentage in the export tables uses count/total (percentage).
+- 3rd Down and Red Zone tables keep the original row heights/header styling and add Total Plays.
+- Takeaway/freeform boxes are no longer edited by export logic, preventing random font-color changes.
+- GoBound fetch remains disabled; optional local opponent overview files are supported.
+
+
+## v2.2 PowerPoint template cleanup
+- Bundled master template uses alternating white/light gray data rows for every table.
+- Opponent labels in the bundled template no longer include Date.
+- Data-row font color is standardized to black in the template so export values do not inherit random red text.
+- Front Tendencies retains five columns: Front, Snaps, Usage, Blitz %, Top Blitz Call.
+- PowerPoint export still only replaces text in existing cells/placeholders and does not resize or recreate tables.
