@@ -64,29 +64,19 @@ You can upload another `.pptx` in the Export tab as long as it keeps the same si
 - Formation Tendencies now lists the top two fronts when the most-used front is below 50%.
 
 
-## v1.6 updates
-- PowerPoint export removes the Date field and keeps only `Opponent: [Opponent Name]`.
-- Every percentage in the PowerPoint deck is shown as `Count/Total (Percentage)`.
-- Slide 2 adds Top Front for each blitz while preserving the existing table structure and formatting.
-- Slide 4 and Slide 5 keep the Total Plays column.
-- Formation Tendencies still lists the top two fronts when the top front is under 50%.
-- Export logic only replaces text in existing placeholders/table cells and does not change fonts, tables, or slide formatting.
+## v2.0 updates
+- PowerPoint export now uses **count/total (percentage)** everywhere a percentage is shown.
+- Opponent labels now show only `Opponent: [Name]`; dates are removed from the slides.
+- Slide 1 can populate an optional Opponent Overview from a local CSV/Excel file instead of relying on a website fetch.
+- Front Tendencies now supports: Front, Snaps, Usage, Blitz %, Top Blitz Call.
+- Blitz Tendencies now supports: Blitz, Snaps, Usage, Top Front, Top Stunt. Top Front and Top Stunt include count/total (percentage).
+- 3rd Down and Red Zone tables include a Total Plays column when present in the template.
+- Formation Tendencies lists the top two fronts when the most-used front is below 50%; otherwise it lists only the top front.
+- Export logic still only replaces text inside existing cells/placeholders. It does not change fonts, table fills, borders, row heights, column widths, or slide formatting.
 
+### Optional opponent overview file
+Upload a CSV or Excel file in the Export tab to populate the overview slide. The file may contain either:
+- A key/value table with columns `Statistic` and `Value`, using rows such as `Overall Record`, `Total Sacks`, `Total INTs`, and `Total Fumble Recoveries`.
+- A schedule table with columns such as `Game`, `Opponent`, `Record`, `Score`, and `W/L`.
 
-## v1.7 Updates
-
-- Adds an **Opponent Overview** slide to the PowerPoint template.
-- Fetches GoBound data from a team page or the GoBound teams listing page when an opponent name is entered.
-- Populates:
-  - Overall record
-  - Total sacks
-  - Total INTs
-  - Total fumble recoveries
-  - Full season game table with opponent, opponent record, score, and W/L
-- Adds derived season context:
-  - Last 5 games record
-  - Average margin
-  - One-possession games
-  - Wins vs opponents with winning records when opponent records are available
-- Keeps existing template formatting intact during export, except the requested W/L color coding on the Overview slide.
-- Keeps Date removed from every slide and leaves only the Opponent line.
+You can also combine snapshot and schedule data in one Excel workbook using separate sheets.

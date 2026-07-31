@@ -5,8 +5,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 from defense_core import DefenseEngine, frequency, combos, DND_ORDER, FIELD_ZONE_ORDER
-from ppt_export import build_defense_pptx
-from gobound_fetch import fetch_gobound_overview
+from ppt_export import build_defense_pptx, read_opponent_overview
 
 st.set_page_config(page_title="Defense Analyst",page_icon="🏈",layout="wide")
 st.title("🏈 Defense Analyst")
@@ -21,12 +20,6 @@ def save_uploads(files,folder):
 with st.sidebar:
     st.header("Opponent data")
     opponent=st.text_input("Opponent name",placeholder="Opponent")
-    gobound_url=st.text_input(
-        "GoBound team/list URL",
-        value="https://www.gobound.com/wi/wiaa/fb/2026-27/teams",
-        help="Paste either the GoBound teams page or a specific team page. If using the teams page, enter the opponent name so the app can locate the team.",
-    )
-    fetch_gobound=st.checkbox("Add GoBound opponent overview slide", value=True)
     files=st.file_uploader("Upload Excel/CSV cutups",type=["xlsx","xls","csv"],accept_multiple_files=True)
     load=st.button("Load defense",type="primary",use_container_width=True)
     st.caption("Only rows tagged D in ODK / O-D-K are analyzed. Missing columns are preserved as No data.")
@@ -38,22 +31,6 @@ if load:
             with tempfile.TemporaryDirectory() as td:
                 eng=DefenseEngine.from_files(save_uploads(files,Path(td)))
             st.session_state.engine=eng; st.session_state.opponent=opponent or "Opponent"
-            st.session_state.gobound_url=gobound_url
-            st.session_state.overview_data={}
-            if fetch_gobound and gobound_url:
-                with st.spinner("Fetching GoBound opponent overview..."):
-                    try:
-                        overview=fetch_gobound_overview(gobound_url, opponent or "")
-                        st.session_state.overview_data=overview.to_dict()
-                        found=[]
-                        if overview.record: found.append(f"record {overview.record}")
-                        if overview.sacks: found.append(f"{overview.sacks} sacks")
-                        if overview.interceptions: found.append(f"{overview.interceptions} INTs")
-                        if overview.fumble_recoveries: found.append(f"{overview.fumble_recoveries} fumble recoveries")
-                        st.success("Loaded " + ", ".join(found) + " from GoBound." if found else "GoBound page loaded; no requested stats were found automatically.")
-                    except Exception as ge:
-                        st.session_state.overview_data={}
-                        st.warning(f"Defense data loaded, but GoBound overview could not be fetched: {ge}")
             st.success(f"Loaded {len(eng.df)} defensive plays.")
         except Exception as e: st.exception(e)
 
@@ -200,33 +177,18 @@ with tabs[10]:
     opponent_name=st.session_state.get("opponent") or "Opponent"
 
     st.subheader("PowerPoint scouting deck")
-    st.caption("Builds the deck from the master breakdown template: Opponent Overview, Fronts, Blitzes, Coverage, 3rd Down, Red Zone, and Formation.")
-    # Optional GoBound refresh / manual confirmation
-    with st.expander("Opponent Overview / GoBound data", expanded=False):
-        current_url=st.text_input("GoBound URL for this export", value=st.session_state.get("gobound_url","https://www.gobound.com/wi/wiaa/fb/2026-27/teams"), key="export_gobound_url")
-        if st.button("Refresh GoBound overview", use_container_width=True):
-            try:
-                overview=fetch_gobound_overview(current_url, opponent_name)
-                st.session_state.overview_data=overview.to_dict()
-                st.session_state.gobound_url=current_url
-                st.success("GoBound overview refreshed.")
-            except Exception as ge:
-                st.warning(f"Could not refresh GoBound overview: {ge}")
-        ov=st.session_state.get("overview_data", {}) or {}
-        c1,c2,c3,c4=st.columns(4)
-        c1.metric("Record", ov.get("record","No data") or "No data")
-        c2.metric("Sacks", ov.get("sacks","No data") or "No data")
-        c3.metric("INTs", ov.get("interceptions","No data") or "No data")
-        c4.metric("Fumble Recoveries", ov.get("fumble_recoveries","No data") or "No data")
-        games=ov.get("games") or []
-        if games:
-            st.dataframe(pd.DataFrame(games), use_container_width=True, hide_index=True)
-
+    st.caption("Builds the deck from the master breakdown template: Opponent Overview, Fronts, Blitzes, Coverage, 3rd Down, Red Zone, and Formation. Every percentage is exported as count/total (percentage).")
     custom_template=st.file_uploader(
         "Optional: upload a different .pptx template with the same slide/table structure",
         type=["pptx"],
         accept_multiple_files=False,
         key="ppt_template_upload",
+    )
+    overview_file=st.file_uploader(
+        "Optional: upload opponent overview CSV/Excel (record, sacks, INTs, fumble recoveries, schedule)",
+        type=["xlsx","xls","csv"],
+        accept_multiple_files=False,
+        key="opponent_overview_upload",
     )
 
     try:
@@ -236,11 +198,19 @@ with tabs[10]:
                 ppt_template_path=tmp.name
         else:
             ppt_template_path=Path(__file__).with_name("MASTER DEF Breakdown Template.pptx")
-        pptx_bytes=build_defense_pptx(eng,ppt_template_path,opponent_name,st.session_state.get("overview_data", {}))
+
+        overview_data=None
+        if overview_file is not None:
+            suffix=Path(overview_file.name).suffix or ".csv"
+            with tempfile.NamedTemporaryFile(delete=False,suffix=suffix) as tmp:
+                tmp.write(overview_file.getbuffer())
+                overview_data=read_opponent_overview(tmp.name)
+
+        pptx_bytes=build_defense_pptx(eng,ppt_template_path,opponent_name,overview=overview_data)
         st.download_button(
             "Download PowerPoint scouting deck",
             pptx_bytes,
-            f"{name}_Defensive_Tendency_Deck.pptx",
+            f"{name}_Defensive_Report_2026.pptx",
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
             type="primary",
             use_container_width=True,
