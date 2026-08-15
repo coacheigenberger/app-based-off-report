@@ -98,9 +98,9 @@ You can also combine snapshot and schedule data in one Excel workbook using sepa
 - Front Tendencies retains five columns: Front, Snaps, Usage, Blitz %, Top Blitz Call.
 - PowerPoint export still only replaces text in existing cells/placeholders and does not resize or recreate tables.
 
-## v2.3 situational slide update
-- Slide 4 (3rd Down) and Slide 5 (Red Zone) now use separate columns for **Fronts**, **Blitz**, and **Coverage**.
-- Fronts show the top 2 fronts in each situation with count/total (percentage).
-- Blitz shows the overall blitz rate plus the top 2 blitz calls in each situation with count/total (percentage).
-- Coverage shows the top coverage in each situation with count/total (percentage).
-- Older 3-column PowerPoint templates remain supported by the export code.
+## v2.3 fixed situational PowerPoint export
+- Slide 4 (3rd Down) and Slide 5 (Red Zone) now fill five separate columns: Situation, Total Plays, Fronts, Blitz, Coverage.
+- Fronts show top 2 fronts in each situation.
+- Blitz shows overall blitz rate plus top 2 blitz calls.
+- Coverage shows the top coverage.
+- The app must use this file as `ppt_export.py`; do not leave it named `ppt_export_v2.3.py`.

@@ -183,7 +183,7 @@ def _red_zone_bucket(df):
 
 
 def _top_n_text(df: pd.DataFrame, col: str, n: int, denom: int | None = None) -> str:
-    """Return the top N calls with count/total (percentage), one per line."""
+    """Return top N values in a situation using count/total (percentage)."""
     d = int(denom if denom is not None else len(df))
     f = frequency(df, col, denom=d).head(n)
     if f.empty or d == 0:
@@ -196,13 +196,12 @@ def _top_n_text(df: pd.DataFrame, col: str, n: int, denom: int | None = None) ->
 
 def _situational_rows_for_template(buckets: dict[str, pd.DataFrame], table_shape) -> tuple[list[str], list[list[object]]]:
     """
-    Slides 4/5 expanded format:
+    Expanded Slide 4 / Slide 5 export:
       Situation | Total Plays | Fronts | Blitz | Coverage
 
-    Fronts: top 2 fronts in the situation.
-    Blitz: overall blitz rate first, then top 2 recorded blitz calls.
-           Blitz-call percentages use all plays in the situation as denominator.
-    Coverage: top coverage in the situation.
+    - Fronts: top 2 fronts in the situation.
+    - Blitz: overall blitz rate plus top 2 blitz calls in that situation.
+    - Coverage: top coverage in the situation.
     """
     cols = len(table_shape.table.columns)
 
@@ -211,19 +210,20 @@ def _situational_rows_for_template(buckets: dict[str, pd.DataFrame], table_shape
         rows = []
         for name, g in buckets.items():
             total = len(g)
+
             fronts = _top_n_text(g, "FRONT", 2, denom=total)
 
             blitz_count = int(g["IS_BLITZ"].sum()) if total else 0
             blitz_rate = f"Overall — {_count_pct(blitz_count, total)}"
             blitz_calls = g[g["IS_BLITZ"] & ~g["BLITZ"].isin(BLANK_BLITZ)].copy()
             top_blitzes = _top_n_text(blitz_calls, "BLITZ", 2, denom=total)
-            blitz_text = blitz_rate if top_blitzes == "No data" else f"{blitz_rate}\n{top_blitzes}"
+            blitz = blitz_rate if top_blitzes == "No data" else f"{blitz_rate}\n{top_blitzes}"
 
             coverage = _top_n_text(g, "COVERAGE", 1, denom=total)
-            rows.append([name, total, fronts, blitz_text, coverage])
+            rows.append([name, total, fronts, blitz, coverage])
         return headers, rows
 
-    # Backward compatibility with older 3-column templates.
+    # Backward compatibility for older 3-column / 2-column templates.
     if cols >= 3:
         headers = ["Situation", "Total Plays", "Top 5 Front/Stunt/Blitz/Coverage Calls"]
         rows = [[name, len(g), _top_combos_text(g, 5)] for name, g in buckets.items()]
